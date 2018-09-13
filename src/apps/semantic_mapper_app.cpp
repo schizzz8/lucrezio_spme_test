@@ -134,8 +134,9 @@ int main(int argc, char** argv){
         //compute NBV
         explorer.setObjects(mapper.globalMap());
         if(explorer.findNearestObject()){
+          int unn_max=-1;
           std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
-          Eigen::Vector3f nbv = explorer.computeNBV();
+          Eigen::Vector3f nbv = explorer.computeNBV(unn_max);
           std::cerr << "NBV: " << nbv.transpose() << std::endl;
         }
         if(first){
