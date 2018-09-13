@@ -12,7 +12,7 @@
 #include <message_filters/sync_policies/approximate_time.h>
 #include <sensor_msgs/Joy.h>
 
-#include <semantic_mapper/semantic_map.h>
+#include <semantic_mapper/object.h>
 #include <lucrezio_semantic_mapper/SemanticMap.h>
 
 #include <pcl_ros/point_cloud.h>

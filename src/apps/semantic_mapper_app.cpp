@@ -52,7 +52,7 @@ void showDetections(const PointCloud::Ptr& transformed_cloud,
                     const DetectionVector &detections,
                     Visualizer::Ptr &viewer);
 
-void showMap(const SemanticMap* map,
+void showMap(const ObjectPtrVector* map,
              Visualizer::Ptr &viewer);
 
 void showOctree(double side,
@@ -305,7 +305,7 @@ void showDetections(const PointCloud::Ptr& transformed_cloud,
   viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "detection_cloud");
 }
 
-void showMap(const SemanticMap *map,
+void showMap(const ObjectPtrVector * map,
              Visualizer::Ptr &viewer){
   for(int i=0;i<map->size();++i){
     const ObjectPtr& obj = map->at(i);
