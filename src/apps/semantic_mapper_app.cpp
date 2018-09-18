@@ -132,12 +132,18 @@ int main(int argc, char** argv){
         mapper.mergeMaps();
 
         //compute NBV
-        explorer.setObjects(mapper.globalMap());
+        explorer.setObjects(*mapper.globalMap());
         if(explorer.findNearestObject()){
-          int unn_max=-1;
           std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
-          Eigen::Vector3f nbv = explorer.computeNBV(unn_max);
+          explorer.computeNBV();
+
+          //current NBV
+          ScoredPose view = explorer.views().top();
+          Eigen::Vector3f nbv = view.pose;
+          int unn_max=view.score;
           std::cerr << "NBV: " << nbv.transpose() << std::endl;
+          std::cerr << "Unn max: " << unn_max << std::endl;
+
         }
         if(first){
           spin=!spin;
