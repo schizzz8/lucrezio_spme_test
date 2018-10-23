@@ -107,7 +107,9 @@ int main(int argc, char** argv){
         //get camera transform
         deserializeTransform(transform_filename.c_str(),camera_transform);
         std::cerr << "Camera transform: " << t2vFull(camera_transform).transpose() << std::endl;
-        viewer->addCoordinateSystem(0.5,camera_transform,"camera_transform");
+
+//        viewer->addCoordinateSystem(0.5,camera_transform,"camera_transform");
+
         detector.setCameraTransform(camera_transform);
         mapper.setGlobalT(camera_transform);
         explorer.setCameraPose(camera_transform);
@@ -132,19 +134,19 @@ int main(int argc, char** argv){
         mapper.mergeMaps();
 
         //compute NBV
-        explorer.setObjects(*mapper.globalMap());
-        if(explorer.findNearestObject()){
-          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
-          explorer.computeNBV();
+//        explorer.setObjects(*mapper.globalMap());
+//        if(explorer.findNearestObject()){
+//          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
+//          explorer.computeNBV();
 
-          //current NBV
-          ScoredPose view = explorer.views().top();
-          Eigen::Vector3f nbv = view.pose;
-          int unn_max=view.score;
-          std::cerr << "NBV: " << nbv.transpose() << std::endl;
-          std::cerr << "Unn max: " << unn_max << std::endl;
+//          //current NBV
+//          ScoredPose view = explorer.views().top();
+//          Eigen::Vector3f nbv = view.pose;
+//          int unn_max=view.score;
+//          std::cerr << "NBV: " << nbv.transpose() << std::endl;
+//          std::cerr << "Unn max: " << unn_max << std::endl;
 
-        }
+//        }
         if(first){
           spin=!spin;
           first=false;
