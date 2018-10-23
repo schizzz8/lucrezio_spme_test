@@ -85,13 +85,15 @@ int main(int argc, char** argv){
 
   //viewer
   Visualizer::Ptr viewer (new Visualizer ("Viewer"));
-  viewer->setBackgroundColor (1.0, 1.0, 1.0);
+//  viewer->setBackgroundColor (1.0, 1.0, 1.0);
+  viewer->setBackgroundColor (0, 0, 0);
   viewer->addCoordinateSystem(0.25);
   viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
   viewer->initCameraParameters ();
 
   //read data
   bool first=true;
+  int seq=-1;
   std::string line;
   std::ifstream data(argv[1]);
   if(data.is_open()){
@@ -104,6 +106,8 @@ int main(int argc, char** argv){
       if(spin && std::getline(data,line)){
 
         //parse line
+        seq++;
+        std::cerr << "Seq: " << seq << std::endl;
         std::istringstream iss(line);
         double timestamp;
         std::string cloud_filename,transform_filename,models_filename;
@@ -154,10 +158,12 @@ int main(int argc, char** argv){
 //          std::cerr << "Unn max: " << unn_max << std::endl;
 
 //        }
-        if(first){
-          spin=!spin;
-          first=false;
-        }
+
+//        if(first){
+//          spin=!spin;
+//          first=false;
+//        }
+        spin=!spin;
       }
 
       // Visualization
