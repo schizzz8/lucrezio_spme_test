@@ -85,7 +85,7 @@ int main(int argc, char** argv){
 
   //viewer
   Visualizer::Ptr viewer (new Visualizer ("Viewer"));
-//  viewer->setBackgroundColor (1.0, 1.0, 1.0);
+  //  viewer->setBackgroundColor (1.0, 1.0, 1.0);
   viewer->setBackgroundColor (0, 0, 0);
   viewer->addCoordinateSystem(0.25);
   viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
@@ -115,8 +115,8 @@ int main(int argc, char** argv){
 
         //get camera transform
         deserializeTransform(transform_filename.c_str(),camera_transform);
-//        std::cerr << "Camera transform: " << t2vFull(camera_transform).transpose() << std::endl;
-//        viewer->addCoordinateSystem(0.5,camera_transform,"camera_transform");
+        //        std::cerr << "Camera transform: " << t2vFull(camera_transform).transpose() << std::endl;
+        //        viewer->addCoordinateSystem(0.5,camera_transform,"camera_transform");
 
         detector.setCameraTransform(camera_transform);
         mapper.setGlobalT(camera_transform);
@@ -124,7 +124,7 @@ int main(int argc, char** argv){
 
         //get cloud
         pcl::io::loadPCDFile<Point> (cloud_filename, *cloud);
-//        std::cerr << "Loading cloud: " << cloud_filename << std::endl;
+        //        std::cerr << "Loading cloud: " << cloud_filename << std::endl;
         pcl::transformPointCloud (*cloud, *transformed_cloud, camera_transform*camera_offset);
         detector.setInputCloud(transformed_cloud);
 
@@ -137,7 +137,7 @@ int main(int argc, char** argv){
         detector.compute();
 
         //save label image
-//        makeLabelImageFromDetections(detector.detections());
+        //        makeLabelImageFromDetections(detector.detections());
 
         //update semantic map
         mapper.extractObjects(detector.detections(),cloud);
@@ -145,25 +145,24 @@ int main(int argc, char** argv){
         mapper.mergeMaps();
 
         //compute NBV
-//        explorer.setObjects(*mapper.globalMap());
-//        if(explorer.findNearestObject()){
-//          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
-//          explorer.computeNBV();
+        //        explorer.setObjects(*mapper.globalMap());
+        //        if(explorer.findNearestObject()){
+        //          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
+        //          explorer.computeNBV();
 
-//          //current NBV
-//          ScoredPose view = explorer.views().top();
-//          Eigen::Vector3f nbv = view.pose;
-//          int unn_max=view.score;
-//          std::cerr << "NBV: " << nbv.transpose() << std::endl;
-//          std::cerr << "Unn max: " << unn_max << std::endl;
+        //          //current NBV
+        //          ScoredPose view = explorer.views().top();
+        //          Eigen::Vector3f nbv = view.pose;
+        //          int unn_max=view.score;
+        //          std::cerr << "NBV: " << nbv.transpose() << std::endl;
+        //          std::cerr << "Unn max: " << unn_max << std::endl;
 
-//        }
+        //        }
 
-//        if(first){
-//          spin=!spin;
-//          first=false;
-//        }
-        spin=!spin;
+        if(first){
+          spin=!spin;
+          first=false;
+        }
       }
 
       // Visualization
@@ -186,8 +185,8 @@ int main(int argc, char** argv){
   }
 
   std::cerr << std::endl;
-//  std::string path = ros::package::getPath("lucrezio_simulation_environments");
-//  evaluator.setReference(path+"/config/envs/test_apartment_2/object_locations.yaml");
+  //  std::string path = ros::package::getPath("lucrezio_simulation_environments");
+  //  evaluator.setReference(path+"/config/envs/test_apartment_2/object_locations.yaml");
   evaluator.setReference("object_locations.yaml");
   evaluator.setCurrent(mapper.globalMap());
   evaluator.compute();
