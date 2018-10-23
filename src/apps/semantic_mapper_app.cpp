@@ -4,6 +4,7 @@
 #include <object_detector/object_detector.h>
 #include <semantic_mapper/semantic_mapper.h>
 #include <semantic_explorer/semantic_explorer.h>
+#include <map_evaluator/map_evaluator.h>
 
 #include <pcl/visualization/pcl_visualizer.h>
 #include <pcl/common/transforms.h>
@@ -63,11 +64,15 @@ void showOctree(double side,
 void showRays(const Vector3fPairVector& rays,
               Visualizer::Ptr& viewer);
 
+void makeLabelImageFromDetections(const DetectionVector &detections);
+
 int main(int argc, char** argv){
 
   ObjectDetector detector;
   SemanticMapper mapper;
   SemanticExplorer explorer;
+  MapEvaluator evaluator;
+
 
   Eigen::Isometry3f camera_transform = Eigen::Isometry3f::Identity();
   ModelVector models;
@@ -80,7 +85,7 @@ int main(int argc, char** argv){
 
   //viewer
   Visualizer::Ptr viewer (new Visualizer ("Viewer"));
-  viewer->setBackgroundColor (0, 0, 0);
+  viewer->setBackgroundColor (1.0, 1.0, 1.0);
   viewer->addCoordinateSystem(0.25);
   viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
   viewer->initCameraParameters ();
@@ -106,8 +111,7 @@ int main(int argc, char** argv){
 
         //get camera transform
         deserializeTransform(transform_filename.c_str(),camera_transform);
-        std::cerr << "Camera transform: " << t2vFull(camera_transform).transpose() << std::endl;
-
+//        std::cerr << "Camera transform: " << t2vFull(camera_transform).transpose() << std::endl;
 //        viewer->addCoordinateSystem(0.5,camera_transform,"camera_transform");
 
         detector.setCameraTransform(camera_transform);
@@ -116,7 +120,7 @@ int main(int argc, char** argv){
 
         //get cloud
         pcl::io::loadPCDFile<Point> (cloud_filename, *cloud);
-        std::cerr << "Loading cloud: " << cloud_filename << std::endl;
+//        std::cerr << "Loading cloud: " << cloud_filename << std::endl;
         pcl::transformPointCloud (*cloud, *transformed_cloud, camera_transform*camera_offset);
         detector.setInputCloud(transformed_cloud);
 
@@ -127,6 +131,9 @@ int main(int argc, char** argv){
 
         //compute detections
         detector.compute();
+
+        //save label image
+//        makeLabelImageFromDetections(detector.detections());
 
         //update semantic map
         mapper.extractObjects(detector.detections(),cloud);
@@ -171,6 +178,15 @@ int main(int argc, char** argv){
       boost::this_thread::sleep (boost::posix_time::microseconds (100000));
     }
   }
+
+  std::cerr << std::endl;
+//  std::string path = ros::package::getPath("lucrezio_simulation_environments");
+//  evaluator.setReference(path+"/config/envs/test_apartment_2/object_locations.yaml");
+  evaluator.setReference("object_locations.yaml");
+  evaluator.setCurrent(mapper.globalMap());
+  evaluator.compute();
+  evaluator.storeMap(mapper.globalMap());
+
   return 0;
 }
 
@@ -442,3 +458,20 @@ void showRays(const Vector3fPairVector &rays,
     viewer->addLine(o,e,buffer);
   }
 }
+
+void makeLabelImageFromDetections(const DetectionVector &detections){
+  cv::Mat_<cv::Vec3b> label_image;
+  label_image.create(480,640);
+  label_image=cv::Vec3b(0,0,0);
+  for(int i=0; i < detections.size(); ++i){
+    cv::Vec3b color(detections[i].color().x(),detections[i].color().y(),detections[i].color().z());
+    for(int j=0; j < detections[i].pixels().size(); ++j){
+      int r = detections[i].pixels()[j].x();
+      int c = detections[i].pixels()[j].y();
+
+      label_image.at<cv::Vec3b>(r,c) = color;
+    }
+  }
+  cv::imwrite("label-image.png",label_image);
+}
+
