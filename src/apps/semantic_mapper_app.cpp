@@ -30,6 +30,8 @@ Vector7f t2vFull(const Eigen::Isometry3f& iso){
   return v;
 }
 
+typedef std::vector<Eigen::Vector2f> Vector2fVector;
+
 bool spin=true;
 bool show_input_cloud=false;
 bool show_models=false;
@@ -66,6 +68,8 @@ void showRays(const Vector3fPairVector& rays,
 
 void makeLabelImageFromDetections(const DetectionVector &detections);
 
+void drawRobotTrajectory(const Vector2fVector& positions);
+
 int main(int argc, char** argv){
 
   ObjectDetector detector;
@@ -78,6 +82,8 @@ int main(int argc, char** argv){
   ModelVector models;
   PointCloud::Ptr cloud (new PointCloud());
   PointCloud::Ptr transformed_cloud (new PointCloud ());
+
+  Vector2fVector positions;
 
   //camera offset
   Eigen::Isometry3f camera_offset = Eigen::Isometry3f::Identity();
@@ -115,34 +121,34 @@ int main(int argc, char** argv){
 
         //get camera transform
         deserializeTransform(transform_filename.c_str(),camera_transform);
-        //        std::cerr << "Camera transform: " << t2vFull(camera_transform).transpose() << std::endl;
-        //        viewer->addCoordinateSystem(0.5,camera_transform,"camera_transform");
 
-        detector.setCameraTransform(camera_transform);
-        mapper.setGlobalT(camera_transform);
-        explorer.setCameraPose(camera_transform);
+        const Eigen::Vector3f& position = camera_transform.translation();
+        positions.push_back(Eigen::Vector2f(position.x(),position.y()));
+
+//        detector.setCameraTransform(camera_transform);
+//        mapper.setGlobalT(camera_transform);
+//        explorer.setCameraPose(camera_transform);
 
         //get cloud
-        pcl::io::loadPCDFile<Point> (cloud_filename, *cloud);
-        //        std::cerr << "Loading cloud: " << cloud_filename << std::endl;
-        pcl::transformPointCloud (*cloud, *transformed_cloud, camera_transform*camera_offset);
-        detector.setInputCloud(transformed_cloud);
+//        pcl::io::loadPCDFile<Point> (cloud_filename, *cloud);
+//        pcl::transformPointCloud (*cloud, *transformed_cloud, camera_transform*camera_offset);
+//        detector.setInputCloud(transformed_cloud);
 
         //get models
-        deserializeModels(models_filename.c_str(),models);
-        detector.setModels(models);
-        detector.setupDetections();
+//        deserializeModels(models_filename.c_str(),models);
+//        detector.setModels(models);
+//        detector.setupDetections();
 
         //compute detections
-        detector.compute();
+//        detector.compute();
 
         //save label image
-        //        makeLabelImageFromDetections(detector.detections());
+        //makeLabelImageFromDetections(detector.detections());
 
         //update semantic map
-        mapper.extractObjects(detector.detections(),cloud);
-        mapper.findAssociations();
-        mapper.mergeMaps();
+//        mapper.extractObjects(detector.detections(),cloud);
+//        mapper.findAssociations();
+//        mapper.mergeMaps();
 
         //compute NBV
         //        explorer.setObjects(*mapper.globalMap());
@@ -184,13 +190,12 @@ int main(int argc, char** argv){
     }
   }
 
-  std::cerr << std::endl;
-  //  std::string path = ros::package::getPath("lucrezio_simulation_environments");
-  //  evaluator.setReference(path+"/config/envs/test_apartment_2/object_locations.yaml");
-  evaluator.setReference("object_locations.yaml");
-  evaluator.setCurrent(mapper.globalMap());
-  evaluator.compute();
-  evaluator.storeMap(mapper.globalMap());
+//  evaluator.setReference("object_locations.yaml");
+//  evaluator.setCurrent(mapper.globalMap());
+//  evaluator.compute();
+//  evaluator.storeMap(mapper.globalMap());
+
+  drawRobotTrajectory(positions);
 
   return 0;
 }
@@ -480,3 +485,19 @@ void makeLabelImageFromDetections(const DetectionVector &detections){
   cv::imwrite("label-image.png",label_image);
 }
 
+void drawRobotTrajectory(const Vector2fVector& positions){
+ float resolution = 0.01;
+ Eigen::Vector2f origin(-6.67, -6.17);
+ cv::Mat image;
+ image = cv::imread("output.png", CV_LOAD_IMAGE_COLOR);
+ cv::Point last_cell((0-origin.x())/resolution,image.rows-(0-origin.y())/resolution);
+
+ for(const Eigen::Vector2f& pos : positions){
+   cv::Point cell((pos.x()-origin.x())/resolution,image.rows-(pos.y()-origin.y())/resolution);
+   cv::circle(image, cell, 1, cv::Scalar(255,0,0));
+   cv::line(image, last_cell, cell, cv::Scalar(0,0,255));
+   last_cell = cell;
+ }
+ cv::imshow("output",image);
+ cv::waitKey();
+}
