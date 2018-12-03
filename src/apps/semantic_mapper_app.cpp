@@ -37,6 +37,7 @@ bool show_input_cloud=false;
 bool show_models=false;
 bool show_detections=false;
 bool show_map=false;
+bool show_ass=false;
 bool show_octree=false;
 bool show_rays=false;
 
@@ -58,6 +59,11 @@ void showDetections(const PointCloud::Ptr& transformed_cloud,
 void showMap(const ObjectPtrVector* map,
              Visualizer::Ptr &viewer);
 
+void showAssociations(const ObjectPtrVector* old_map,
+                      const ObjectPtrVector* new_map,
+                      const ObjectPtrIdMap& ass,
+                      Visualizer::Ptr &viewer);
+
 void showOctree(double side,
                 const PointCloud::Ptr& occ_cloud,
                 const PointCloud::Ptr& fre_cloud,
@@ -77,6 +83,8 @@ int main(int argc, char** argv){
   SemanticExplorer explorer;
   MapEvaluator evaluator;
 
+  const ObjectPtrVector* old_map = 0;
+  const ObjectPtrVector* new_map = 0;
 
   Eigen::Isometry3f camera_transform = Eigen::Isometry3f::Identity();
   ModelVector models;
@@ -91,7 +99,7 @@ int main(int argc, char** argv){
 
   //viewer
   Visualizer::Ptr viewer (new Visualizer ("Viewer"));
-  //  viewer->setBackgroundColor (1.0, 1.0, 1.0);
+//  viewer->setBackgroundColor (1.0, 1.0, 1.0);
   viewer->setBackgroundColor (0, 0, 0);
   viewer->addCoordinateSystem(0.25);
   viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
@@ -113,6 +121,9 @@ int main(int argc, char** argv){
 
         //parse line
         seq++;
+//        if(seq%3)
+//          continue;
+
         std::cerr << "Seq: " << seq << std::endl;
         std::istringstream iss(line);
         double timestamp;
@@ -125,50 +136,52 @@ int main(int argc, char** argv){
         const Eigen::Vector3f& position = camera_transform.translation();
         positions.push_back(Eigen::Vector2f(position.x(),position.y()));
 
-//        detector.setCameraTransform(camera_transform);
-//        mapper.setGlobalT(camera_transform);
-//        explorer.setCameraPose(camera_transform);
+        detector.setCameraTransform(camera_transform);
+        mapper.setGlobalT(camera_transform);
+        explorer.setCameraPose(camera_transform);
 
         //get cloud
-//        pcl::io::loadPCDFile<Point> (cloud_filename, *cloud);
-//        pcl::transformPointCloud (*cloud, *transformed_cloud, camera_transform*camera_offset);
-//        detector.setInputCloud(transformed_cloud);
+        pcl::io::loadPCDFile<Point> (cloud_filename, *cloud);
+        pcl::transformPointCloud (*cloud, *transformed_cloud, camera_transform*camera_offset);
+        detector.setInputCloud(transformed_cloud);
 
         //get models
-//        deserializeModels(models_filename.c_str(),models);
-//        detector.setModels(models);
-//        detector.setupDetections();
+        deserializeModels(models_filename.c_str(),models);
+        detector.setModels(models);
+        detector.setupDetections();
 
         //compute detections
-//        detector.compute();
+        detector.compute();
 
         //save label image
         //makeLabelImageFromDetections(detector.detections());
 
         //update semantic map
-//        mapper.extractObjects(detector.detections(),cloud);
-//        mapper.findAssociations();
-//        mapper.mergeMaps();
+        mapper.extractObjects(detector.detections(),cloud);
+        mapper.findAssociations();
+        mapper.mergeMaps();
+
+        //show associations
+//        showAssociations(old_map,new_map,mapper.associations(),viewer);
 
         //compute NBV
-        //        explorer.setObjects(*mapper.globalMap());
-        //        if(explorer.findNearestObject()){
-        //          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
-        //          explorer.computeNBV();
+//        explorer.setObjects(*mapper.globalMap());
+//        if(explorer.findNearestObject()){
+//          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
+//          explorer.computeNBV();
 
-        //          //current NBV
-        //          ScoredPose view = explorer.views().top();
-        //          Eigen::Vector3f nbv = view.pose;
-        //          int unn_max=view.score;
-        //          std::cerr << "NBV: " << nbv.transpose() << std::endl;
-        //          std::cerr << "Unn max: " << unn_max << std::endl;
+//          //current NBV
+//          ScoredPose view = explorer.views().top();
+//          Eigen::Vector3f nbv = view.pose;
+//          int unn_max=view.score;
+//          std::cerr << "NBV: " << nbv.transpose() << std::endl;
+//          std::cerr << "Unn max: " << unn_max << std::endl;
+//        }
 
-        //        }
-
-        if(first){
+//        if(first){
           spin=!spin;
-          first=false;
-        }
+//          first=false;
+//        }
       }
 
       // Visualization
@@ -184,9 +197,12 @@ int main(int argc, char** argv){
         showOctree(0.05,explorer.nearestObject()->occVoxelCloud(),explorer.nearestObject()->freVoxelCloud(),viewer);
       if(show_rays)
         showRays(explorer.rays(),viewer);
+      if(show_ass)
+        showAssociations(mapper.globalMap(),mapper.localMap(),mapper.associations(),viewer);
 
-      viewer->spinOnce(100);
-      boost::this_thread::sleep (boost::posix_time::microseconds (100000));
+
+      viewer->spinOnce();
+      boost::this_thread::sleep (boost::posix_time::microseconds (100));
     }
   }
 
@@ -195,7 +211,7 @@ int main(int argc, char** argv){
 //  evaluator.compute();
 //  evaluator.storeMap(mapper.globalMap());
 
-  drawRobotTrajectory(positions);
+//  drawRobotTrajectory(positions);
 
   return 0;
 }
@@ -304,6 +320,14 @@ void keyboardEventOccurred(const pcl::visualization::KeyboardEvent &event, void*
     else
       std::cerr << "RAYS HIDDEN" << std::endl;
   }
+  if (event.getKeySym() == "a" && event.keyDown()){
+    show_ass ^= 1;
+    if(show_ass)
+      std::cerr << "SHOWING ASSOC" << std::endl;
+    else
+      std::cerr << "ASSOC HIDDEN" << std::endl;
+  }
+
   //  if (event.getKeySym() == "h" && event.keyDown())
   //    std::cout << "'h' was pressed" << std::endl;
 }
@@ -354,6 +378,64 @@ void showMap(const ObjectPtrVector * map,
     viewer->addPointCloud<Point> (obj_cloud, obj_rgb, obj->model());
     viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, obj->model());
   }
+}
+
+void showAssociations(const ObjectPtrVector* old_map,
+                      const ObjectPtrVector* new_map,
+                      const ObjectPtrIdMap& ass,
+                      Visualizer::Ptr &viewer){
+
+    for(int i=0; i<new_map->size(); ++i){
+      const ObjectPtr &local = (*new_map)[i];
+      ObjectPtrIdMap::const_iterator it = ass.find(local);
+      int association_id = -1;
+      if(it != ass.end()){
+        association_id = it->second;
+        const ObjectPtr &global_associated = (*old_map)[association_id];
+
+        if(local->model() != global_associated->model())
+          continue;
+
+        const Eigen::Vector3f l_p = local->position();
+        const Eigen::Vector3f g_p = global_associated->position();
+        Point l_pt;
+        l_pt.x = l_p.x();
+        l_pt.y = l_p.y();
+        l_pt.z = l_p.z();
+        Point g_pt;
+        g_pt.x = g_p.x()+1;
+        g_pt.y = g_p.y()+1;
+        g_pt.z = g_p.z();
+
+        viewer->addLine(l_pt,g_pt,local->model());
+
+        viewer->addCoordinateSystem (0.25,local->position().x(),local->position().y(),local->position().z());
+        PointCloud::Ptr local_cloud = local->cloud();
+        pcl::visualization::PointCloudColorHandlerRGBField<Point> local_rgb(local_cloud);
+        viewer->addPointCloud<Point> (local_cloud, local_rgb, local->model());
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, local->model());
+
+        viewer->addCoordinateSystem (0.25,
+                                     global_associated->position().x()+1,
+                                     global_associated->position().y()+1,
+                                     global_associated->position().z());
+        PointCloud::Ptr global_associated_cloud = global_associated->cloud();
+
+        for(size_t idx=0; idx<global_associated_cloud->size(); ++idx){
+          Point& pt = global_associated_cloud->at(idx);
+          pt.x += 1;
+          pt.y +=1;
+          pt.r -= 100;
+        }
+
+        pcl::visualization::PointCloudColorHandlerRGBField<Point> global_associated_rgb(global_associated_cloud);
+        std::string global_string = "global"+ global_associated->model();
+        viewer->addPointCloud<Point> (global_associated_cloud, global_associated_rgb, global_string );
+        viewer->setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, global_string );
+
+
+      }
+    }
 }
 
 void showOctree(double s,
@@ -500,4 +582,6 @@ void drawRobotTrajectory(const Vector2fVector& positions){
  }
  cv::imshow("output",image);
  cv::waitKey();
+
+ cv::imwrite("trajectory.png",image);
 }

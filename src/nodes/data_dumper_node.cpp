@@ -37,7 +37,7 @@ public:
     _enable = false;
 
     _out.open(filename);
-    _seq=0;
+    _seq=-1;
 
     ROS_INFO("Starting data dumper node...");
   }
@@ -63,6 +63,10 @@ public:
     ros::Duration stamp_diff = image_stamp - depth_stamp;
     if(std::abs(stamp_diff.toSec()) > 0.03)
       return;
+
+    _seq++;
+//    if(_seq%3)
+//      return;
 
     if(!_enable)
       return;
@@ -92,7 +96,6 @@ public:
     _out << transform_filename << " ";
     _out << models_filename << std::endl;
 
-    _seq++;
     _enable=false;
     std::cerr << ".";
 
