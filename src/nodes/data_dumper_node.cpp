@@ -65,8 +65,6 @@ public:
       return;
 
     _seq++;
-//    if(_seq%3)
-//      return;
 
     if(!_enable)
       return;
@@ -75,7 +73,7 @@ public:
 
     // save point cloud
     char cloud_filename[80];
-    sprintf(cloud_filename,"cloud_%lu.png",_seq);
+    sprintf(cloud_filename,"cloud_%lu.pcd",_seq);
     pcl::io::savePCDFileASCII (cloud_filename, *depth_points_msg);
 
     // save camera pose
