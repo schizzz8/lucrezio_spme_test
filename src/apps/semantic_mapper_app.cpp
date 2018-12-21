@@ -98,7 +98,6 @@ int main(int argc, char** argv){
 
   //viewer
   Visualizer::Ptr viewer (new Visualizer ("Viewer"));
-//  viewer->setBackgroundColor (1.0, 1.0, 1.0);
   viewer->setBackgroundColor (0, 0, 0);
   viewer->addCoordinateSystem(0.25);
   viewer->registerKeyboardCallback(keyboardEventOccurred, (void*)&viewer);
@@ -162,18 +161,24 @@ int main(int argc, char** argv){
 //        showAssociations(old_map,new_map,mapper.associations(),viewer);
 
         //compute NBV
-//        explorer.setObjects(*mapper.globalMap());
-//        if(explorer.findNearestObject()){
-//          std::cerr << "Nearest: " << explorer.nearestObject()->model() << std::endl;
-//          explorer.computeNBV();
+        explorer.setObjects(*mapper.globalMap());
+        ObjectPtr nearest_object=0;
+        if(explorer.findNearestObject(nearest_object)){
+          std::cerr << "Processing: " << nearest_object->model() << std::endl;
 
-//          //current NBV
-//          ScoredPose view = explorer.views().top();
-//          Eigen::Vector3f nbv = view.pose;
-//          int unn_max=view.score;
-//          std::cerr << "NBV: " << nbv.transpose() << std::endl;
-//          std::cerr << "Unn max: " << unn_max << std::endl;
-//        }
+          //generate candidate views
+          Isometry3fVector candidate_views = explorer.generateCandidateViews(nearest_object);
+
+          //compute NBV
+          explorer.computeNBV(candidate_views,nearest_object);
+
+          //current NBV
+          ScoredPose view = explorer.views().top();
+          Eigen::Vector3f nbv = view.pose;
+          int unn_max=view.score;
+          std::cerr << "NBV: " << nbv.transpose() << std::endl;
+          std::cerr << "Unn max: " << unn_max << std::endl;
+        }
 
 //        if(first){
           spin=!spin;
